@@ -1,5 +1,6 @@
 import 'package:connection_alley/views/login_view.dart';
 import 'package:connection_alley/views/register_view.dart';
+import 'package:connection_alley/views/test.dart';
 import 'package:flutter/material.dart';
 
 class LoginOrRegister extends StatefulWidget {
@@ -22,7 +23,7 @@ class _LoginOrRegisterState extends State<LoginOrRegister> {
     if (showLoginPage) {
       return LoginView(onTap: togglePages);
     } else {
-      return RegisterView(onTap: togglePages);
+      return Test(onTap: togglePages);
     }
     
   }

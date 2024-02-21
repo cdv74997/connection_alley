@@ -2,19 +2,19 @@ import 'package:connection_alley/widgets/button.dart';
 import 'package:connection_alley/widgets/text_input.dart';
 import 'package:flutter/material.dart';
 
-class RegisterView extends StatefulWidget {
+class Test extends StatefulWidget {
   final Function()? onTap;
-  const RegisterView({super.key, required this.onTap});
+  const Test({super.key, required this.onTap});
 
-  @override 
-  State<RegisterView> createState() => _RegisterViewState();
+  @override
+  State<Test> createState() => _TestState(); 
 }
 
-class _RegisterViewState extends State<RegisterView> {
-  final emailInputController = TextEditingController();
-  final passwordInputController = TextEditingController();
-  final confirmPasswordInputController = TextEditingController();
-  @override 
+class _TestState extends State<Test> {
+
+  final a = TextEditingController();
+  final b = TextEditingController();
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.green[200],
@@ -23,9 +23,9 @@ class _RegisterViewState extends State<RegisterView> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 25.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-              
+              const SizedBox(height: 30),
              
               // logo
               const Icon(
@@ -34,7 +34,7 @@ class _RegisterViewState extends State<RegisterView> {
               ),
               const SizedBox(height: 50),
               // opening greeting
-              Text("Create your account here!",
+              Text("test",
                   style: TextStyle(
                     color: Colors.grey[700],
                   ),),
@@ -42,21 +42,19 @@ class _RegisterViewState extends State<RegisterView> {
               const SizedBox(height: 25),
                 
               // email input
-              MyInputField(controller: emailInputController, hintText: "Email", obscureText: false),
+              MyInputField(controller: a, hintText: "o", obscureText: false),
               const SizedBox(height: 10),
               // password input
-              MyInputField(controller: passwordInputController, hintText: "Password", obscureText: true),
-              const SizedBox(height: 10),
-              MyInputField(controller: confirmPasswordInputController, hintText: "Confirm Password", obscureText: true),
+              MyInputField(controller: b, hintText: "p", obscureText: true),
               const SizedBox(height: 10),
               // sign in button
-              MyButton(onTap: (){}, text: "Sign Up", color: Colors.red),
+              MyButton(onTap: (){}, text: "hmmm", color: Colors.blue),
               const SizedBox(height: 25),
               // register button
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Already have and account?",
+                  Text("wow",
                   style: TextStyle(
                     color: Colors.grey[700],
                   ),
@@ -64,7 +62,7 @@ class _RegisterViewState extends State<RegisterView> {
                   const SizedBox(width: 4),
                   GestureDetector(
                     onTap: widget.onTap,
-                    child: const Text("Login", style: TextStyle(
+                    child: const Text("what the", style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),

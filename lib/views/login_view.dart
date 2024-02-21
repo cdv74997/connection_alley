@@ -48,7 +48,7 @@ class _LoginViewState extends State<LoginView> {
               MyInputField(controller: passwordInputController, hintText: "Password", obscureText: true),
               const SizedBox(height: 10),
               // sign in button
-              MyButton(onTap: (){}, text: "Sign in"),
+              MyButton(onTap: (){}, text: "Sign in", color: Colors.blue),
               const SizedBox(height: 25),
               // register button
               Row(
