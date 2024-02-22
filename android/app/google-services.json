@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "178553912624",
+    "project_id": "connection-alley",
+    "storage_bucket": "connection-alley.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178553912624:android:33f71486e62ea2cb66dcf5",
+        "android_client_info": {
+          "package_name": "com.example.connection_alley"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuO3xI0GUc1T6MEORuU8qc22BAE2a5ecI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
