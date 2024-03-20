@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/services/auth_service.dart';
 import 'package:connection_alley/widgets/button.dart';
 import 'package:connection_alley/widgets/square_tile.dart';
@@ -26,7 +27,18 @@ class _RegisterViewState extends State<RegisterView> {
 
     try {
       if (passwordInputController.text == confirmPasswordInputController.text) {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(email: emailInputController.text, password: passwordInputController.text);
+        // create the user
+
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: emailInputController.text, password: passwordInputController.text);
+
+        // after creating the user, create a new doc called Users in cloud firebase
+        FirebaseFirestore.instance
+            .collection("Users")
+            .doc(userCredential.user!.email)
+            .set({
+              'username': emailInputController.text.split('@')[0],
+              'bio': 'Empty bio..'
+            });
 
       } else {
         // passwords dont match
