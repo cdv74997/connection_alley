@@ -57,10 +57,11 @@ class _HomeViewState extends State<HomeView> {
   @override 
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         
         title: Text("Connection-Alley"),
-        backgroundColor: Colors.grey[900],
+        //backgroundColor: Theme.of(context).colorScheme.background,
         //actions: [IconButton(onPressed: signUserOut, icon: const Icon(Icons.logout))]
         ),
       drawer: MyDrawer(onProfileTap: goToProfilePage, onSignOut: signUserOut),

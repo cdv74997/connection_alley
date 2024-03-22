@@ -1,5 +1,7 @@
 import 'package:connection_alley/auth/auth_page.dart';
 import 'package:connection_alley/auth/login_or_register.dart';
+import 'package:connection_alley/theme/dark_theme.dart';
+import 'package:connection_alley/theme/light_theme.dart';
 import 'package:connection_alley/views/login_view.dart';
 import 'package:connection_alley/views/register_view.dart';
 import 'package:flutter/material.dart';
@@ -22,10 +24,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     
-    return const MaterialApp(
+    return MaterialApp(
       
       debugShowCheckedModeBanner: false,
-      home: AuthPage(),
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      home: const AuthPage(),
      // home: LoginView(onTap: fun),
     );
   }

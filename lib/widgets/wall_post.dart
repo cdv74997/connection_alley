@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:connection_alley/widgets/comment.dart';
 import 'package:connection_alley/widgets/comment_button.dart';
+import 'package:connection_alley/widgets/delete_button.dart';
 import 'package:connection_alley/widgets/like_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -106,10 +107,48 @@ class _WallPostState extends State<WallPost> {
    );
   }
 
+  // delete a post
+  void deletePost() {
+    // show a dialog box foo to ask for confirmation for deleting the post
+    showDialog(context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Delete Post"),
+      content: const Text("Are you sure you want to delete this post?"),
+      actions: [
+        // cancel button
+        TextButton(onPressed: () => Navigator.pop(context), 
+        child: const Text("Cancel"),
+        ),
+
+        // delete button
+        TextButton(onPressed: () async {
+          // delete the comments from firebase first
+          final commentDocs = await FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).collection("Comments").get();
+
+          for (var doc in commentDocs.docs) {
+            await FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).collection("Comments").doc(doc.id).delete();
+          }
+
+          // then delete the post
+          FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).delete().then((value) => print("post deleted")).catchError((error) => print("failed to delete post: $error"));
+
+          // delete the dialog
+          Navigator.pop(context);
+
+        }, 
+        child: const Text("Delete"),
+        ),
+
+      ],
+    ),
+    );
+
+  }
+
   @override 
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(8)),
       margin: EdgeInsets.only(top: 25, left: 25, right: 25),
       padding: EdgeInsets.all(25),
       child: Column(
@@ -118,32 +157,47 @@ class _WallPostState extends State<WallPost> {
         children: [
           
           // wall post
-          Column(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // message
-              Text(widget.message),
-              const SizedBox(height: 5),
-              //user
-              Row(
+
+              // group of text (message + user email)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.user,
-                    style: TextStyle(color: Colors.grey[900])
+                  // message
+                  Text(widget.message),
+                  const SizedBox(height: 5),
+                  //user
+                  Row(
+                    children: [
+                      Text(
+                        widget.user,
+                        style: TextStyle(color: Colors.grey[900])
+                      ),
+                      Text(
+                        " . ",
+                        style: TextStyle(color: Colors.grey[900])
+                      ),
+                      Text(
+                        widget.time,
+                        style: TextStyle(color: Colors.grey[900])
+                      ),
+                    ],
                   ),
-                  Text(
-                    " . ",
-                    style: TextStyle(color: Colors.grey[900])
-                  ),
-                  Text(
-                    widget.time,
-                    style: TextStyle(color: Colors.grey[900])
-                  ),
+                  
+                  
+                  
                 ],
               ),
+
+              // delete button
+              if (widget.user == currentUser.email) 
+              DeleteButton(onTap: deletePost)
+             
               
-              
-              
+                
             ],
           ),
 
