@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:connection_alley/views/profile_page.dart';
@@ -21,7 +23,17 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   final user = FirebaseAuth.instance.currentUser!;
   final textController = TextEditingController();
+  String name = "";
+  List <Map<String, dynamic>> data = [];
 
+  addData() async {
+    for (var ele in data)
+    {
+      FirebaseFirestore.instance.collection('Users').add(ele);
+      // ignore: avoid_print
+      print(ele as String);
+    }
+  }
    // sign user out
   void signUserOut() {
     FirebaseAuth.instance.signOut();
@@ -54,19 +66,85 @@ class _HomeViewState extends State<HomeView> {
     });
   }
 
+  @override
+  void initState()
+  {
+    super.initState();
+    addData();
+  }
+
   @override 
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        
-        title: Text("Connection-Alley"),
+        title: Card (child: TextField(
+              decoration: InputDecoration(
+                hintText: "Search People or Groups",
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (val)
+              {
+                setState(()
+                {
+                  name = val;
+                });
+              },),)
         //backgroundColor: Theme.of(context).colorScheme.background,
         //actions: [IconButton(onPressed: signUserOut, icon: const Icon(Icons.logout))]
         ),
       drawer: MyDrawer(onProfileTap: goToProfilePage, onSignOut: signUserOut),
       body: Column(
         children: [
+          StreamBuilder <QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection("Users").snapshots(),
+            builder: (context, snapshots)
+            {
+              return (snapshots.connectionState == ConnectionState.waiting)
+              ? Center (child: CircularProgressIndicator(),)
+              : ListView.builder (
+                itemCount: snapshots.data!.docs.length,
+                itemBuilder: (context, index) 
+                {
+                  var data = snapshots.data!.docs[index].data() as Map<String, dynamic>;
+
+                  if (name.isEmpty) 
+                  {
+                    return ListTile(
+                      title: Text(data['name'], maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: TextStyle (
+                          color: Colors.black54,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                        ),
+                      leading: CircleAvatar(
+                        backgroundImage: NetworkImage(data['image']),
+                        ),
+                      );
+                  }
+
+                  if (data['name'].toString().toLowerCase().startsWith(name.toLowerCase())) 
+                  {
+                    return ListTile(
+                      title: Text(
+                        data['name'], 
+                        maxLines: 1, 
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle (
+                          color: Colors.black54,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                        ),
+                        leading: CircleAvatar(
+                          backgroundImage: NetworkImage(data['image']),
+                        ),
+                      );
+                  }
+                  return Container();
+                }
+              );
+          }),
           Expanded(
             child: StreamBuilder(
               stream: FirebaseFirestore.instance.collection("User Posts").orderBy("TimeStamp", descending: false,).snapshots(),
