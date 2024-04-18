@@ -15,6 +15,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   // all users
   final usersCollection = FirebaseFirestore.instance.collection("Users");
+  final double coverHeight = 280;
+  final double profileHeight = 144;
 
   // edit field
   Future<void> editField(String field) async {
@@ -47,6 +49,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
   @override 
   Widget build(BuildContext context) {
+    final top = coverHeight - profileHeight / 2;
+    final bottom = profileHeight / 2;
+    final color = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
@@ -61,13 +67,35 @@ class _ProfilePageState extends State<ProfilePage> {
               final userData = snapshot.data!.data() as Map<String, dynamic>;
 
               return ListView(
-          children: [
+          children: [ Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center, 
+            children: [
+              Container (
+                margin: EdgeInsets.only(bottom: bottom),
+                child:
+                  buildCoverImage()),
+              Positioned( 
+                top: top,
+                child: buildProfileImage(),),
+              Positioned( 
+                bottom: 0,
+                right: 4,
+                child: buildEditIcon(color),),
+            ]),
             const SizedBox(height: 50),
             // profile pic
-            const Icon(
-              Icons.person,
-              size: 72,
-            ),
+            //const Icon(
+              //Icons.person,
+              //size: 72,
+            //),
+            IntrinsicHeight(child: Row (
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                buildButton(context, '123', 'Followers'),
+                buildDivider(),
+                buildButton(context, '123', 'Following'),
+              ],)),
             const SizedBox(height: 10),
             // user email
             Text(
@@ -118,4 +146,57 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
     );
   }
+
+  Widget buildCoverImage() => Container(
+    color: Colors.grey, 
+    child: Image.network ('https://storage.googleapis.com/cms-storage-bucket/70760bf1e88b184bb1bc.png'),
+      width: double.infinity,
+      height: coverHeight,
+  );
+
+  Widget buildProfileImage() => CircleAvatar( 
+    radius: profileHeight / 2, 
+    backgroundColor: Colors.grey.shade800,
+    backgroundImage: NetworkImage ('https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Person_icon_%28the_Noun_Project_2817719%29.svg/24px-Person_icon_%28the_Noun_Project_2817719%29.svg.png'),
+  );
+
+  Widget buildEditIcon (Color color) => buildCircle(
+    color: Colors.white,
+    all: 3,
+    child: buildCircle(
+      color: color,
+      all: 8,
+      child: Icon(
+        Icons.edit, 
+      size: 20)));
+
+  Widget buildCircle ({
+    required Widget child, 
+    required double all, 
+    required Color color,}) => 
+    Container (
+      padding: EdgeInsets.all(all), color: color, child: child,
+    );
+  
+  Widget buildDivider() => VerticalDivider();
+
+  Widget buildButton (BuildContext context, String value, String text) {
+    return MaterialButton(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      onPressed: () {/* does nothing */},
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      child: Column ( 
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[ 
+          Text(
+            value, 
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: 12)),
+          SizedBox(height: 2),
+          ]
+          ),
+      );
+  }  
 }

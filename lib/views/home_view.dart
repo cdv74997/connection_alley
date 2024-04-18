@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:connection_alley/views/profile_page.dart';
 import 'package:connection_alley/views/search_user_view.dart'; // Import the search user page
+import 'package:connection_alley/views/friends_page.dart';
 import 'package:connection_alley/widgets/drawer.dart';
 import 'package:connection_alley/widgets/text_input.dart';
 import 'package:connection_alley/widgets/wall_post.dart';
@@ -36,7 +37,16 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  void postMessage() {
+  void goToFriendsPage() {
+    Navigator.pop(context);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FriendsPage(),),
+    );
+  }
+
+  void postMessage () {
     // only if text is present in field
     if (textController.text.isNotEmpty) {
       FirebaseFirestore.instance.collection("User Posts").add({
@@ -72,7 +82,7 @@ class _HomeViewState extends State<HomeView> {
           )
         ],
       ),
-      drawer: MyDrawer(onProfileTap: goToProfilePage, onSignOut: signUserOut),
+      drawer: MyDrawer(onProfileTap: goToProfilePage, onSignOut: signUserOut, onFriendsTap: goToFriendsPage),
       body: Column(
         children: [
           Padding(

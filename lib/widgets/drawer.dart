@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 class MyDrawer extends StatelessWidget {
   final void Function()? onProfileTap;
   final void Function()? onSignOut;
-  const MyDrawer({super.key, required this.onProfileTap, required this.onSignOut});
+  final void Function()? onFriendsTap;
+  const MyDrawer({super.key, required this.onProfileTap, required this.onSignOut, required this.onFriendsTap});
 
   @override 
   Widget build(BuildContext context) {
@@ -28,6 +29,8 @@ class MyDrawer extends StatelessWidget {
 
           // profile list tile
           MyListTile(icon: Icons.person, text: 'P R O F I L E', onTap: onProfileTap),
+
+          MyListTile(icon: Icons.supervised_user_circle, text: 'F R I E N D S', onTap: onFriendsTap),
           ],),
           // logout button
           Padding(
