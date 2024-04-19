@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:connection_alley/views/profile_page.dart';
+import 'package:connection_alley/views/search_user_view.dart'; // Import the search user page
 import 'package:connection_alley/widgets/drawer.dart';
 import 'package:connection_alley/widgets/text_input.dart';
 import 'package:connection_alley/widgets/wall_post.dart';
@@ -8,11 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class HomeView extends StatefulWidget {
-  HomeView({super.key });
-
-  
-
- 
+  HomeView({Key? key});
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -21,8 +18,9 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   final user = FirebaseAuth.instance.currentUser!;
   final textController = TextEditingController();
+  String searchText = '';
 
-   // sign user out
+  // sign user out
   void signUserOut() {
     FirebaseAuth.instance.signOut();
   }
@@ -38,45 +36,104 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  void postMessage () {
+  void postMessage() {
     // only if text is present in field
-
     if (textController.text.isNotEmpty) {
       FirebaseFirestore.instance.collection("User Posts").add({
-      'UserEmail': user.email,
-      'Message': textController.text,
-      'TimeStamp': Timestamp.now(),
-      'Likes': [],
-    });
+        'UserEmail': user.email,
+        'Message': textController.text,
+        'TimeStamp': Timestamp.now(),
+        'Likes': [],
+      });
     }
     setState(() {
       textController.clear();
     });
   }
 
-  @override 
+  void goToSearchUserView() {
+    // Navigate to the search user page
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SearchUserView()),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        
         title: Text("Connection-Alley"),
-        //backgroundColor: Theme.of(context).colorScheme.background,
-        //actions: [IconButton(onPressed: signUserOut, icon: const Icon(Icons.logout))]
-        ),
+        actions: [
+          IconButton(
+            onPressed: signUserOut,
+            icon: const Icon(Icons.logout),
+          )
+        ],
+      ),
       drawer: MyDrawer(onProfileTap: goToProfilePage, onSignOut: signUserOut),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black),
+                borderRadius: BorderRadius.circular(5.0),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          searchText = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: goToSearchUserView,
+                    icon: Icon(Icons.person),
+                  )
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: StreamBuilder(
-              stream: FirebaseFirestore.instance.collection("User Posts").orderBy("TimeStamp", descending: false,).snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection("User Posts")
+                  .orderBy("TimeStamp", descending: false)
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
+                  final filteredPosts = snapshot.data!.docs.where((post) {
+                    final postData = post.data() as Map<String, dynamic>;
+                    final message = postData['Message'] as String;
+                    final user = postData['UserEmail'] as String;
+                    return message.contains(searchText) ||
+                        user.contains(searchText);
+                  }).toList();
+
                   return ListView.builder(
-                    itemCount: snapshot.data!.docs.length,
+                    itemCount: filteredPosts.length,
                     itemBuilder: (context, index) {
-                      final post = snapshot.data!.docs[index];
-                      return WallPost(message: post['Message'], user: post['UserEmail'], postId: post.id, likes: List<String>.from(post['Likes'] ?? []), time: formatDate(post["TimeStamp"]));
+                      final post = filteredPosts[index];
+                      return WallPost(
+                        message: post['Message'],
+                        user: post['UserEmail'],
+                        postId: post.id,
+                        likes: List<String>.from(post['Likes'] ?? []),
+                        time: formatDate(post["TimeStamp"]),
+                      );
                     },
                   );
                 } else if (snapshot.hasError) {
@@ -84,7 +141,7 @@ class _HomeViewState extends State<HomeView> {
                     child: Text('Error: ' + snapshot.error.toString()),
                   );
                 }
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator());
               },
             ),
           ),
@@ -99,21 +156,22 @@ class _HomeViewState extends State<HomeView> {
                     obscureText: false,
                   ),
                 ),
-
-                IconButton(onPressed: postMessage, icon: const Icon(Icons.arrow_circle_up))
+                IconButton(
+                  onPressed: postMessage,
+                  icon: const Icon(Icons.arrow_circle_up),
+                )
               ],
             ),
           ),
-
-          Text("Logged in as: " + user.email!, style: TextStyle(color: Colors.grey),),
-
+          Text(
+            "Logged in as: " + user.email!,
+            style: TextStyle(color: Colors.grey),
+          ),
           const SizedBox(
             height: 50,
           ),
-
-          
-        ]
-        ),
+        ],
+      ),
     );
   }
 }

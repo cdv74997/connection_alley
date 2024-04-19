@@ -37,7 +37,8 @@ class _RegisterViewState extends State<RegisterView> {
             .doc(userCredential.user!.email)
             .set({
               'username': emailInputController.text.split('@')[0],
-              'bio': 'Empty bio..'
+              'bio': 'Empty bio..',
+              'profilePicture': '',
             });
 
       } else {
