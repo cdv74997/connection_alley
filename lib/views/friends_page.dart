@@ -82,7 +82,26 @@ class _FriendsPageState extends State<FriendsPage> {
                   style: TextStyle(color: Colors.white)), 
                   subtitle: Text('${_foundUsers[index]["email"]}',
                   style: TextStyle(color: Colors.white)),
-              )),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.message),
+                        onPressed: () {
+                          // Logic here to message a friend
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.person),
+                        onPressed: () {
+                          // Logic here to view profile
+                        },
+                      ),
+                    ],
+                  ),
+              ), 
+              
+              ),
             ),
           )
         ]),
