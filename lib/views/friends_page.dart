@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/widgets/text_box.dart';
+import 'package:connection_alley/views/message.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -89,6 +90,10 @@ class _FriendsPageState extends State<FriendsPage> {
                         icon: Icon(Icons.message),
                         onPressed: () {
                           // Logic here to message a friend
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => MessagePage()),
+                          );
                         },
                       ),
                       IconButton(
