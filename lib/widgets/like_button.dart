@@ -10,7 +10,7 @@ class LikeButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Icon(
-        isLiked ? Icons.favorite: Icons.favorite_border,
+        isLiked ? Icons.thumb_up: Icons.thumb_up_outlined,
         color: isLiked ? Colors.blue : Colors.grey,
       ),
 

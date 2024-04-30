@@ -1,13 +1,13 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:connection_alley/views/profile_page.dart';
-import 'package:connection_alley/views/search_user_view.dart'; // Import the search user page
+import 'package:connection_alley/views/search_user_view.dart';
 import 'package:connection_alley/views/friends_page.dart';
 import 'package:connection_alley/widgets/drawer.dart';
 import 'package:connection_alley/widgets/text_input.dart';
 import 'package:connection_alley/widgets/wall_post.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 
 class HomeView extends StatefulWidget {
   HomeView({Key? key});
@@ -33,7 +33,7 @@ class _HomeViewState extends State<HomeView> {
     // go to profile page
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ProfilePage(),),
+      MaterialPageRoute(builder: (context) => const ProfilePage()),
     );
   }
 
@@ -42,11 +42,11 @@ class _HomeViewState extends State<HomeView> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const FriendsPage(),),
+      MaterialPageRoute(builder: (context) => const FriendsPage()),
     );
   }
 
-  void postMessage () {
+  void postMessage() {
     // only if text is present in field
     if (textController.text.isNotEmpty) {
       FirebaseFirestore.instance.collection("User Posts").add({
@@ -77,17 +77,80 @@ class _HomeViewState extends State<HomeView> {
         title: Text("Connection-Alley"),
         actions: [
           IconButton(
+            onPressed: () {},
+            icon: Stack(
+              children: [
+                Icon(Icons.notifications),
+                Positioned(
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Stack(
+              children: [
+                Icon(Icons.message),
+                Positioned(
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '5',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
             onPressed: signUserOut,
             icon: const Icon(Icons.logout),
           )
         ],
       ),
-      drawer: MyDrawer(onProfileTap: goToProfilePage, onSignOut: signUserOut, onFriendsTap: goToFriendsPage),
+      drawer: MyDrawer(
+        onProfileTap: goToProfilePage,
+        onSignOut: signUserOut,
+        onFriendsTap: goToFriendsPage,
+      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 15.0),
               decoration: BoxDecoration(
