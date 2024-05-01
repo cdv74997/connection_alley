@@ -8,6 +8,7 @@ import 'package:connection_alley/views/friends_page.dart';
 import 'package:connection_alley/widgets/drawer.dart';
 import 'package:connection_alley/widgets/text_input.dart';
 import 'package:connection_alley/widgets/wall_post.dart';
+import 'package:connection_alley/widgets/notification_widget.dart';
 
 class HomeView extends StatefulWidget {
   HomeView({Key? key});
@@ -20,6 +21,8 @@ class _HomeViewState extends State<HomeView> {
   final user = FirebaseAuth.instance.currentUser!;
   final textController = TextEditingController();
   String searchText = '';
+  bool showWallPosts = true;
+  bool showNotifications = false;
 
   // sign user out
   void signUserOut() {
@@ -69,76 +72,102 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  void markNotificationAsRead(DocumentSnapshot notification) {
+  // Mark the notification as read
+  FirebaseFirestore.instance.collection("Notifications").doc(notification.id).update({
+    'read': true,
+  });
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        title: Text("Connection-Alley"),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              setState(() {
+                showWallPosts = true;
+                showNotifications = false;
+              });
+            },
+            icon: Icon(
+              Icons.home,
+              color: showWallPosts ? Colors.blue : null,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                showWallPosts = false;
+                showNotifications = true;
+              });
+            },
             icon: Stack(
               children: [
-                Icon(Icons.notifications),
-                Positioned(
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                      ),
-                      textAlign: TextAlign.center,
+                Icon(
+                  Icons.notifications,
+                  color: showNotifications ? Colors.blue : null,
+                ),
+                if (!showNotifications)
+                  Positioned(
+                    right: 0,
+                    child: StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection("Notifications")
+                          .where('recipient', isEqualTo: user.email)
+                          .where('read', isEqualTo: false)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return Container();
+                        }
+                        final count = snapshot.data!.docs.length;
+                        return count > 0
+                            ? Container(
+                                padding: EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                constraints: BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  count.toString(),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              )
+                            : Container();
+                      },
                     ),
                   ),
-                ),
               ],
             ),
           ),
           IconButton(
-            onPressed: () {},
-            icon: Stack(
-              children: [
-                Icon(Icons.message),
-                Positioned(
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '5',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
+            onPressed: () {
+              setState(() {
+                showWallPosts = false;
+                showNotifications = false;
+              });
+            },
+            icon: Icon(
+              Icons.message,
+              color: !showWallPosts && !showNotifications ? Colors.blue : null,
             ),
           ),
           IconButton(
             onPressed: signUserOut,
-            icon: const Icon(Icons.logout),
+            icon: const Icon(
+              Icons.logout,
+            ),
           )
         ],
       ),
@@ -149,92 +178,143 @@ class _HomeViewState extends State<HomeView> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15.0),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black),
-                borderRadius: BorderRadius.circular(5.0),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) {
-                        setState(() {
-                          searchText = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        border: InputBorder.none,
+          if (showWallPosts)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black),
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (value) {
+                          setState(() {
+                            searchText = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          border: InputBorder.none,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: goToSearchUserView,
-                    icon: Icon(Icons.person),
-                  )
-                ],
+                    IconButton(
+                      onPressed: goToSearchUserView,
+                      icon: Icon(Icons.person),
+                    )
+                  ],
+                ),
               ),
             ),
-          ),
           Expanded(
-            child: StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection("User Posts")
-                  .orderBy("TimeStamp", descending: false)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final filteredPosts = snapshot.data!.docs.where((post) {
-                    final postData = post.data() as Map<String, dynamic>;
-                    final message = postData['Message'] as String;
-                    final user = postData['UserEmail'] as String;
-                    return message.contains(searchText) ||
-                        user.contains(searchText);
-                  }).toList();
+            child: showWallPosts
+                ? StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection("User Posts")
+                        .orderBy("TimeStamp", descending: false)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasData) {
+                        final filteredPosts = snapshot.data!.docs.where((post) {
+                          final postData = post.data() as Map<String, dynamic>;
+                          final message = postData['Message'] as String;
+                          final user = postData['UserEmail'] as String;
+                          return message.contains(searchText) ||
+                              user.contains(searchText);
+                        }).toList();
 
-                  return ListView.builder(
-                    itemCount: filteredPosts.length,
-                    itemBuilder: (context, index) {
-                      final post = filteredPosts[index];
-                      return WallPost(
-                        message: post['Message'],
-                        user: post['UserEmail'],
-                        postId: post.id,
-                        likes: List<String>.from(post['Likes'] ?? []),
-                        time: formatDate(post["TimeStamp"]),
-                      );
+                        return ListView.builder(
+                          itemCount: filteredPosts.length,
+                          itemBuilder: (context, index) {
+                            final post = filteredPosts[index];
+                            return WallPost(
+                              message: post['Message'],
+                              user: post['UserEmail'],
+                              postId: post.id,
+                              likes: List<String>.from(post['Likes'] ?? []),
+                              time: formatDate(post["TimeStamp"]),
+                            );
+                          },
+                        );
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ' + snapshot.error.toString()),
+                        );
+                      }
+                      return Center(child: CircularProgressIndicator());
                     },
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error: ' + snapshot.error.toString()),
-                  );
-                }
-                return Center(child: CircularProgressIndicator());
-              },
-            ),
+                  )
+                : StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection("Notifications")
+                        .where('recipient', isEqualTo: user.email)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasData) {
+                        final notifications = snapshot.data!.docs;
+                        return ListView.builder(
+                          itemCount: notifications.length,
+                          itemBuilder: (context, index) {
+                            final notification = notifications[index];
+                            final data = notification.data();
+                            return GestureDetector(
+                              onTap: () {
+                                // Mark the notification as read when tapped
+                                markNotificationAsRead(notification);
+                              },
+                              child: NotificationWidget(
+                                postId: data['postId'],
+                                read: data['read'],
+                                recipient: data['recipient'],
+                                message: data['message'],
+                                time: data['time'],
+                              ),
+                            );
+                          },
+                        );
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ' + snapshot.error.toString()),
+                        );
+                      }
+                      return Center(child: CircularProgressIndicator());
+                    },
+                  ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(25.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: MyInputField(
-                    controller: textController,
-                    hintText: "Post your connected events here.. ",
-                    obscureText: false,
+          Column(
+            children: [
+              if (showWallPosts)
+                Padding(
+                  padding: const EdgeInsets.all(25.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: MyInputField(
+                          controller: textController,
+                          hintText: "Post your connected events here.. ",
+                          obscureText: false,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: postMessage,
+                        icon: const Icon(Icons.arrow_circle_up),
+                      )
+                    ],
                   ),
                 ),
-                IconButton(
-                  onPressed: postMessage,
-                  icon: const Icon(Icons.arrow_circle_up),
-                )
-              ],
-            ),
+            ],
           ),
           Text(
             "Logged in as: " + user.email!,
@@ -248,3 +328,4 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 }
+

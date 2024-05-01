@@ -4,9 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:connection_alley/widgets/comment.dart';
 import 'package:connection_alley/widgets/comment_button.dart';
-import 'package:connection_alley/widgets/delete_button.dart';
 import 'package:connection_alley/widgets/like_button.dart';
-import 'package:connection_alley/widgets/share_button.dart'; // Import the share button widget
+import 'package:connection_alley/widgets/share_button.dart';
+import 'package:connection_alley/widgets/notification_widget.dart';
 
 class WallPost extends StatefulWidget {
   final String message;
@@ -51,6 +51,15 @@ class _WallPostState extends State<WallPost> {
     if (isLiked) {
       postRef.update({
         'Likes': FieldValue.arrayUnion([currentUser.email])
+      }).then((_) {
+        // Create a notification for liking the post
+        FirebaseFirestore.instance.collection('Notifications').add({
+          'recipient': widget.user,
+          'message': '${currentUser.email} liked your post',
+          'time': Timestamp.now(),
+          'read': false, // New field: read, default to false
+          'postId': widget.postId, // New field: postId
+        });
       });
     } else {
       postRef.update({
@@ -65,6 +74,15 @@ class _WallPostState extends State<WallPost> {
       "CommentText": commentText,
       "CommentedBy": currentUser.email,
       "CommentTime": Timestamp.now(),
+    }).then((_) {
+      // Create a notification for commenting on the post
+      FirebaseFirestore.instance.collection('Notifications').add({
+        'recipient': widget.user,
+        'message': '${currentUser.displayName} commented on your post',
+        'time': Timestamp.now(),
+        'read': false, // New field: read, default to false
+        'postId': widget.postId, // New field: postId
+      });
     });
   }
 
@@ -79,16 +97,6 @@ class _WallPostState extends State<WallPost> {
           decoration: InputDecoration(hintText: "Write a comment.."),
         ),
         actions: [
-          // cancel button
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-
-              // clear controller
-              _commentTextController.clear();
-            },
-            child: Text("Cancel"),
-          ),
           // save button
           TextButton(
             onPressed: () {
@@ -102,43 +110,15 @@ class _WallPostState extends State<WallPost> {
             },
             child: Text("Post"),
           ),
-        ],
-      ),
-    );
-  }
-
-  // delete a post
-  void deletePost() {
-    // show a dialog box foo to ask for confirmation for deleting the post
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Post"),
-        content: const Text("Are you sure you want to delete this post?"),
-        actions: [
           // cancel button
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-
-          // delete button
-          TextButton(
-            onPressed: () async {
-              // delete the comments from firebase first
-              final commentDocs = await FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).collection("Comments").get();
-
-              for (var doc in commentDocs.docs) {
-                await FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).collection("Comments").doc(doc.id).delete();
-              }
-
-              // then delete the post
-              FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).delete().then((value) => print("post deleted")).catchError((error) => print("failed to delete post: $error"));
-
-              // delete the dialog
+            onPressed: () {
               Navigator.pop(context);
+
+              // clear controller
+              _commentTextController.clear();
             },
-            child: const Text("Delete"),
+            child: Text("Cancel"),
           ),
         ],
       ),
@@ -184,7 +164,7 @@ class _WallPostState extends State<WallPost> {
             children: [
               LikeButton(isLiked: isLiked, onTap: toggleLike),
               CommentButton(onTap: showCommentDialog),
-              ShareButton(onTap: (){}), // Add the share button here
+              ShareButton(onTap: () {}),
             ],
           ),
           SizedBox(height: 10),
@@ -223,3 +203,4 @@ class _WallPostState extends State<WallPost> {
     );
   }
 }
+
