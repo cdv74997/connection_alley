@@ -1,3 +1,4 @@
+import 'package:connection_alley/widgets/user.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,6 +24,9 @@ class _HomeViewState extends State<HomeView> {
   String searchText = '';
   bool showWallPosts = true;
   bool showNotifications = false;
+  bool showMessages = false;
+  bool showPeople = false;
+  bool showFriendRequests = false;
 
   // sign user out
   void signUserOut() {
@@ -90,6 +94,9 @@ class _HomeViewState extends State<HomeView> {
               setState(() {
                 showWallPosts = true;
                 showNotifications = false;
+                showFriendRequests = false;
+                showMessages = false;
+                showPeople = false;
               });
             },
             icon: Icon(
@@ -102,6 +109,9 @@ class _HomeViewState extends State<HomeView> {
               setState(() {
                 showWallPosts = false;
                 showNotifications = true;
+                showFriendRequests = false;
+                showMessages = false;
+                showPeople = false;
               });
             },
             icon: Stack(
@@ -152,17 +162,46 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           IconButton(
+                      onPressed: () {
+                        setState(() {
+                          showPeople = false;
+                          showMessages = false;
+                          showFriendRequests = true;
+                          showWallPosts = false;
+                          showNotifications = false;
+                        });
+                      },
+                      icon: Icon(Icons.group),
+                      color: showFriendRequests ? Colors.blue: null,
+                    ),
+          IconButton(
             onPressed: () {
               setState(() {
+                showPeople = false;
+                showMessages = true;
+                showFriendRequests = false;
                 showWallPosts = false;
                 showNotifications = false;
               });
             },
             icon: Icon(
               Icons.message,
-              color: !showWallPosts && !showNotifications ? Colors.blue : null,
+              color: showMessages ? Colors.blue : null,
             ),
           ),
+          IconButton(
+                      onPressed: () {
+                        setState(() {
+                          showPeople = true;
+                          showMessages = false;
+                          showFriendRequests = false;
+                          showWallPosts = false;
+                          showNotifications = false;
+                        });
+                      },
+                      icon: Icon(Icons.person),
+                      color: showPeople ? Colors.blue: null,
+                    ),
           IconButton(
             onPressed: signUserOut,
             icon: const Icon(
@@ -252,7 +291,7 @@ class _HomeViewState extends State<HomeView> {
                       return Center(child: CircularProgressIndicator());
                     },
                   )
-                : StreamBuilder(
+                : showNotifications? StreamBuilder(
                     stream: FirebaseFirestore.instance
                         .collection("Notifications")
                         .where('recipient', isEqualTo: user.email)
@@ -291,7 +330,49 @@ class _HomeViewState extends State<HomeView> {
                       }
                       return Center(child: CircularProgressIndicator());
                     },
-                  ),
+                  )
+                  : showPeople
+            ? StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection("Users")
+                  .orderBy("username", descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                if (snapshot.hasData) {
+                  final filteredUsers = snapshot.data!.docs.where((user) {
+                    final userData = user.data() as Map<String, dynamic>;
+                    final email = userData['email'];
+                    final bio = userData['bio'] as String;
+                    final username = userData['username'] as String;
+                    return username.contains(searchText);
+                  }).toList();
+
+                  return ListView.builder(
+                    itemCount: filteredUsers.length,
+                    itemBuilder: (context, index) {
+                      // Replace with user widget
+                      final user = filteredUsers[index];
+                      return UserWidget(
+                        email: user.id,
+                        bio: user['bio'],
+                        username: user['username'],
+                      );
+                    },
+                  );
+                }  else if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ' + snapshot.error.toString()),
+                        );
+                      }
+              return Center(child: CircularProgressIndicator());
+              },
+            ) :
+            
+                  Container(),
           ),
           Column(
             children: [
@@ -328,4 +409,3 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 }
-
