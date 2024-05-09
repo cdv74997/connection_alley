@@ -57,7 +57,7 @@ class MessagePage extends StatelessWidget {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('messages')
-                  .orderBy('timestamp')
+                  .orderBy('timestamp', descending: true)
                   .where('conversationID', isEqualTo: conversationID)
                   
                   .snapshots(),

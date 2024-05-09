@@ -1,3 +1,4 @@
+import 'package:connection_alley/widgets/conversation.dart';
 import 'package:connection_alley/widgets/user.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +11,8 @@ import 'package:connection_alley/widgets/drawer.dart';
 import 'package:connection_alley/widgets/text_input.dart';
 import 'package:connection_alley/widgets/wall_post.dart';
 import 'package:connection_alley/widgets/notification_widget.dart';
+
+
 
 class HomeView extends StatefulWidget {
   HomeView({Key? key});
@@ -28,10 +31,69 @@ class _HomeViewState extends State<HomeView> {
   bool showPeople = false;
   bool showFriendRequests = false;
 
+Stream<List<QueryDocumentSnapshot>> _getMessagesStream(String userEmail) {
+  return Stream.fromFuture(_getMessages(userEmail));
+}
+
+Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
+  // Execute both queries concurrently
+  List<QuerySnapshot> snapshots = await Future.wait([
+    FirebaseFirestore.instance
+        .collection('messages')
+        .where('recipientID', isEqualTo: userEmail)
+        .orderBy('timestamp', descending: true)
+        .get(),
+    FirebaseFirestore.instance
+        .collection('messages')
+        .where('senderID', isEqualTo: userEmail)
+        .orderBy('timestamp', descending: true)
+        .get(),
+  ]);
+
+  // Merge the results of both queries into a single list
+  List<QueryDocumentSnapshot> allMessages = [];
+  for (var snapshot in snapshots) {
+    allMessages.addAll(snapshot.docs);
+  }
+
+  // Sort all messages by timestamp in descending order
+  allMessages.sort((a, b) {
+    Timestamp timestampA = a['timestamp'];
+    Timestamp timestampB = b['timestamp'];
+    return timestampB.compareTo(timestampA);
+  });
+
+  // Create a map to store the most recent message for each conversation
+  Map<String, QueryDocumentSnapshot> recentMessagesMap = {};
+
+  // Iterate through the sorted messages and store the most recent message for each conversation
+  for (var message in allMessages) {
+    final recipientID = message['recipientID'];
+    final senderID = message['senderID'];
+    final conversationID = _generateConversationID(userEmail, recipientID ?? senderID ?? '');
+
+    // Store the message if it's not already in the map
+    if (!recentMessagesMap.containsKey(conversationID)) {
+      recentMessagesMap[conversationID] = message;
+    }
+  }
+
+  // Return the values (most recent messages) of the recentMessagesMap as a list
+  return recentMessagesMap.values.toList();
+}
+
+
   // sign user out
   void signUserOut() {
     FirebaseAuth.instance.signOut();
   }
+
+  String _generateConversationID(String currentUserID, String otherUserID) {
+  // Sort the user IDs alphabetically to maintain consistency
+  List<String> sortedUserIDs = [currentUserID, otherUserID]..sort();
+  return '${sortedUserIDs[0]}-${sortedUserIDs[1]}';
+}
+
 
   void goToProfilePage() {
     // pop menu drawer
@@ -370,33 +432,72 @@ class _HomeViewState extends State<HomeView> {
                       }
               return Center(child: CircularProgressIndicator());
               },
-            ) :
-            
-                  Container(),
+            ) : showMessages ? StreamBuilder(
+  stream: _getMessagesStream(user.email!),
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Center(child: CircularProgressIndicator());
+    }
+    if (snapshot.hasData) {
+      final messages = snapshot.data as List<QueryDocumentSnapshot>;
+      return ListView.builder(
+        itemCount: messages.length,
+        itemBuilder: (context, index) {
+          final messageData = messages[index].data() as Map<String, dynamic>;
+          if (messageData != null) {
+          final recipientID = messageData['recipientID'];
+          final senderID = messageData['senderID'];
+          final message = messageData['message'];
+          final time = messageData['timestamp'];
+          String conversationID;
+      if (recipientID == user.email) {
+        
+        conversationID = senderID;
+      } else {
+       
+        conversationID = recipientID;
+      }
+          return Conversation(
+            recipientID: conversationID,
+            message: message, 
+            time: time, // Handle null case
+          );
+          }
+        },
+      );
+    } else if (snapshot.hasError) {
+      return Center(
+        child: Text('Error: ' + snapshot.error.toString()),
+      );
+    }
+    return Center(child: CircularProgressIndicator());
+  },
+) : Container(),
+
           ),
-          Column(
-            children: [
-              if (showWallPosts)
-                Padding(
-                  padding: const EdgeInsets.all(25.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: MyInputField(
-                          controller: textController,
-                          hintText: "Post your connected events here.. ",
-                          obscureText: false,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: postMessage,
-                        icon: const Icon(Icons.arrow_circle_up),
-                      )
-                    ],
-                  ),
-                ),
-            ],
-          ),
+Column(
+  children: [
+    if (showWallPosts)
+      Padding(
+        padding: const EdgeInsets.all(25.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: MyInputField(
+                controller: textController,
+                hintText: "Post your connected events here.. ",
+                obscureText: false,
+              ),
+            ),
+            IconButton(
+              onPressed: postMessage,
+              icon: const Icon(Icons.arrow_circle_up),
+            )
+          ],
+        ),
+      ),
+  ],
+),
           Text(
             "Logged in as: " + user.email!,
             style: TextStyle(color: Colors.grey),
