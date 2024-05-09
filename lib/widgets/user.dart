@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:connection_alley/views/message_backend_con.dart';
+import 'package:connection_alley/widgets/public_user_profile.dart'; 
 
 
 class UserWidget extends StatelessWidget {
@@ -34,14 +37,34 @@ class UserWidget extends StatelessWidget {
               icon: Icon(Icons.person),
               onPressed: () {
                 // View Profile
+                  Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => UserProfilePage(userId: email)),);
               },
             ),
             IconButton(
-              icon: Icon(Icons.message),
-              onPressed: () {
-                // Send Message
-              },
-            ),
+  icon: Icon(Icons.message),
+  onPressed: () async {
+    // Query the Users collection to find the user ID based on the email
+    
+
+    // Check if the query returned any documents
+    
+      // Extract the user ID from the first document
+      
+
+      // Navigate to the message page with the user IDs
+      // ignore: use_build_context_synchronously
+      Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => MessagePage(
+                              currentUserID: currentUser!.email!,
+                              otherUserID: email,
+                            )),
+                          );
+    
+  },
+),
             IconButton(
               icon: Icon(Icons.person_add),
               onPressed: () {

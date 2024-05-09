@@ -9,9 +9,12 @@ class MessagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String conversationID = _generateConversationID();
+    TextEditingController _textEditingController = TextEditingController();
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.grey.shade400, // Slightly darker shade of gray
+        backgroundColor: Colors.grey.shade400,
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
@@ -24,7 +27,7 @@ class MessagePage extends StatelessWidget {
               backgroundImage: AssetImage('assets/profile_placeholder.jpg'),
             ),
             SizedBox(width: 10),
-            Text('Name'),
+            Text(otherUserID),
           ],
         ),
         actions: [
@@ -54,30 +57,39 @@ class MessagePage extends StatelessWidget {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('messages')
-                  .where('senderID', whereIn: [currentUserID, otherUserID])
-                  .where('recipientID', whereIn: [currentUserID, otherUserID])
-                  .orderBy('timestamp', descending: false)
+                  .orderBy('timestamp')
+                  .where('conversationID', isEqualTo: conversationID)
+                  
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(),
                   );
+                } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text("No messages available"),
+                  );
+                } else {
+                  List<DocumentSnapshot> messages = snapshot.data!.docs;
+                  messages = messages.reversed.toList();
+                  return ListView.builder(
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      Map<String, dynamic> messageData =
+                          messages[index].data() as Map<String, dynamic>;
+                      bool isCurrentUserMessage =
+                          messageData['senderID'] == currentUserID;
+                      return _buildMessageBubble(
+                          messageData['message'], isCurrentUserMessage);
+                    },
+                  );
                 }
-                List<DocumentSnapshot> messages = snapshot.data!.docs;
-                return ListView.builder(
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    Map<String, dynamic> messageData = messages[index].data() as Map<String, dynamic>;
-                    bool isCurrentUserMessage = messageData['senderID'] == currentUserID;
-                    return _buildMessageBubble(messageData['message'], isCurrentUserMessage);
-                  },
-                );
               },
             ),
           ),
           Container(
-            color: Colors.grey.shade400, // Same color as app bar
+            color: Colors.grey.shade400,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -109,27 +121,32 @@ class MessagePage extends StatelessWidget {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white, // Lighter color for the message input
-                        borderRadius: BorderRadius.circular(20), // Rounded edges
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 0.0), // Add padding to the bottom
+                        padding: const EdgeInsets.only(top: 0.0),
                         child: TextField(
+                          controller: _textEditingController,
                           textAlignVertical: TextAlignVertical.center,
                           decoration: InputDecoration(
                             hintText: 'Message',
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                            suffixIcon: IconButton( // Happy face icon as suffix
-                              icon: Icon(Icons.sentiment_satisfied),
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: 10),
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.send),
                               onPressed: () {
-                                // Handle emoji press action
+                                final String message =
+                                    _textEditingController.text.trim();
+                                if (message.isNotEmpty) {
+                                  sendMessage(message, conversationID);
+                                  _textEditingController.clear();
+                                }
                               },
                             ),
                           ),
-                          onSubmitted: (value) {
-                            sendMessage(value);
-                          },
+                          textInputAction: TextInputAction.send,
                         ),
                       ),
                     ),
@@ -164,7 +181,8 @@ class MessagePage extends StatelessWidget {
           ],
           Expanded(
             child: Align(
-              alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -185,12 +203,19 @@ class MessagePage extends StatelessWidget {
     );
   }
 
-  void sendMessage(String message) {
+  void sendMessage(String message, String conversationID) {
     FirebaseFirestore.instance.collection('messages').add({
       'message': message,
       'senderID': currentUserID,
       'recipientID': otherUserID,
+      'conversationID': conversationID,
       'timestamp': Timestamp.now(),
     });
+  }
+
+  String _generateConversationID() {
+    // Sort the user IDs alphabetically to maintain consistency
+    List<String> sortedUserIDs = [currentUserID, otherUserID]..sort();
+    return '${sortedUserIDs[0]}-${sortedUserIDs[1]}';
   }
 }
