@@ -192,9 +192,10 @@ class _WallPostState extends State<WallPost> {
           TextButton(
             onPressed: () {
               // Delete the post
-              FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).delete().then((_) {
-                // Close the dialog
+              // Close the dialog
                 Navigator.pop(context);
+              FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).delete().then((_) {
+                
               }).catchError((error) {
                 // Handle the error
                 print("Error deleting post: $error");

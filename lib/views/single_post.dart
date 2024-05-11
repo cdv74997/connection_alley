@@ -35,14 +35,8 @@ class SinglePost extends StatelessWidget {
             );
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => HomeView()),
-    );
-            return Center(
-    child: CircularProgressIndicator(),
-  );
-            
+            // Return the fallback layout
+            return _buildFallbackLayout(context);
           }
 
           final postData = snapshot.data!;
@@ -57,4 +51,36 @@ class SinglePost extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildFallbackLayout(BuildContext context) {
+    // Here you can define your fallback layout
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Post not found!',
+            style: TextStyle(fontSize: 20),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Navigate to home view when the button is pressed
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HomeView()),
+              );
+            },
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all<Color>(Colors.blue[900]!), // Dark blue color
+            ),
+            child: const Text(
+              'Go to Home',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
