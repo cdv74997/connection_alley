@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connection_alley/views/single_post.dart';
 
 class NotificationWidget extends StatelessWidget {
+  final String id;
   final String recipient;
   final String postId;
   final String message;
@@ -11,6 +12,7 @@ class NotificationWidget extends StatelessWidget {
 
   const NotificationWidget({
     Key? key,
+    required this.id,
     required this.postId,
     required this.read,
     required this.recipient,

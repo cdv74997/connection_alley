@@ -378,6 +378,7 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
                                 markNotificationAsRead(notification);
                               },
                               child: NotificationWidget(
+                                id: notification.id,
                                 postId: data['postId'],
                                 read: data['read'],
                                 recipient: data['recipient'],

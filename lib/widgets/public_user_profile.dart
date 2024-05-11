@@ -1,12 +1,79 @@
+import 'package:connection_alley/views/message_backend_con.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connection_alley/widgets/wall_post.dart'; // Importing the WallPost widget
-import 'package:connection_alley/helper/helper_methods.dart'; // Import formatDate function
+import 'package:connection_alley/widgets/wall_post.dart';
+import 'package:connection_alley/helper/helper_methods.dart';
 
-class UserProfilePage extends StatelessWidget {
+class UserProfilePage extends StatefulWidget {
   final String userId;
 
   const UserProfilePage({Key? key, required this.userId}) : super(key: key);
+
+  @override
+  _UserProfilePageState createState() => _UserProfilePageState();
+}
+
+class _UserProfilePageState extends State<UserProfilePage> {
+  late User user;
+  bool reverserequestExists = false;
+  bool requestExists = false;
+
+  Stream<List<QueryDocumentSnapshot>> _getFriendRequestStream(String userEmail, String otherUserEmail) {
+    return Stream.fromFuture(_getRequests(userEmail, otherUserEmail));
+  }
+
+  Future<List<QueryDocumentSnapshot>> _getRequests(String userEmail, String otherUserEmail) async {
+    List<QuerySnapshot> snapshots = await Future.wait([
+      FirebaseFirestore.instance
+          .collection('Friend Requests')
+          .where('recipientId', isEqualTo: userEmail)
+          .where('senderId', isEqualTo: otherUserEmail)
+          .get(),
+      FirebaseFirestore.instance
+          .collection('Friend Requests')
+          .where('senderId', isEqualTo: userEmail)
+          .where('recipientId', isEqualTo: otherUserEmail)
+          .get(),
+    ]);
+
+    List<QueryDocumentSnapshot> allRequests = [];
+    for (var snapshot in snapshots) {
+      allRequests.addAll(snapshot.docs);
+    }
+    return allRequests;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    user = FirebaseAuth.instance.currentUser!;
+    _updateRequestStatus();
+  }
+
+  void _updateRequestStatus() {
+    FirebaseFirestore.instance
+        .collection('Friend Requests')
+        .where('senderId', isEqualTo: user.email)
+        .where('recipientId', isEqualTo: widget.userId)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        requestExists = snapshot.docs.isNotEmpty;
+      });
+    });
+
+    FirebaseFirestore.instance
+        .collection('Friend Requests')
+        .where('senderId', isEqualTo: widget.userId)
+        .where('recipientId', isEqualTo: user.email)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        reverserequestExists = snapshot.docs.isNotEmpty;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +83,7 @@ class UserProfilePage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('Users').doc(userId).get(),
+          future: FirebaseFirestore.instance.collection('Users').doc(widget.userId).get(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
@@ -32,27 +99,24 @@ class UserProfilePage extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Banner Image (You can replace it with an actual banner)
                 Placeholder(
-                  fallbackHeight: 100, // Reduced vertical height
+                  fallbackHeight: 100,
                 ),
-                // Profile Picture (Placeholder)
                 Center(
                   child: Container(
-                    margin: EdgeInsets.symmetric(vertical: 10), // Reduced margin
-                    width: 80, // Reduced width
-                    height: 80, // Reduced height
+                    margin: EdgeInsets.symmetric(vertical: 10),
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.grey, // Placeholder color
-                      shape: BoxShape.circle, // Rounded shape
+                      color: Colors.grey,
+                      shape: BoxShape.circle,
                     ),
                   ),
                 ),
-                // User Info: Username and Bio
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center, // Center align username
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         username,
@@ -66,7 +130,6 @@ class UserProfilePage extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Message and More Button
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
@@ -74,37 +137,181 @@ class UserProfilePage extends StatelessWidget {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          // Implement message functionality
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => MessagePage(
+                              currentUserID: user.email!,
+                              otherUserID: widget.userId,
+                            )),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.blue, // Button color
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // Slightly rounded borders
-                          padding: EdgeInsets.symmetric(vertical: 12), // Increased vertical padding
+                          primary: Colors.blue,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
                           'Message',
-                          style: TextStyle(color: Colors.white), // Text color
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Implement more functionality
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('Friend Requests')
+                            .where('senderId', isEqualTo: user.email)
+                            .where('recipientId', isEqualTo: widget.userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          }
+                          if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          }
+
+                          final List<DocumentSnapshot> friendRequests = snapshot.data!.docs;
+                          final requestExists = friendRequests.isNotEmpty;
+
+                          if (requestExists) {
+                            return ElevatedButton(
+                              onPressed: () async {
+                                try {
+                                  await FirebaseFirestore.instance
+                                      .collection('Friend Requests')
+                                      .doc(friendRequests.first.id)
+                                      .delete();
+                                } catch (error) {
+                                  print('Error canceling friend request: $error');
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                primary: Colors.red,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                              ),
+                              child: Text(
+                                'Cancel Request',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            );
+                          } else {
+                            return SizedBox(height: 0);
+                          }
                         },
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.green, // Button color
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // Slightly rounded borders
-                          padding: EdgeInsets.symmetric(vertical: 12), // Increased vertical padding
-                        ),
-                        child: Text(
-                          'More',
-                          style: TextStyle(color: Colors.white), // Text color
-                        ),
+                      ),
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('Friend Requests')
+                            .where('senderId', isEqualTo: widget.userId)
+                            .where('recipientId', isEqualTo: user.email)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          }
+                          if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          }
+
+                          final List<DocumentSnapshot> friendRequestsr = snapshot.data!.docs;
+                          final reverserequestExists = friendRequestsr.isNotEmpty;
+
+                          if (reverserequestExists) {
+                            return Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    try {
+                                      await FirebaseFirestore.instance
+                                          .collection('Friend Requests')
+                                          .doc(friendRequestsr.first.id)
+                                          .update({'accepted': true});
+                                    } catch (error) {
+                                      print('Error accepting friend request: $error');
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    primary: Colors.green,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                  ),
+                                  child: Text(
+                                    'Accept',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    try {
+                                      await FirebaseFirestore.instance
+                                          .collection('Friend Requests')
+                                          .doc(friendRequestsr.first.id)
+                                          .delete();
+                                    } catch (error) {
+                                      print('Error ignoring friend request: $error');
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    primary: Colors.red,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                  ),
+                                  child: Text(
+                                    'Ignore',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            );
+                          } else {
+                            return StreamBuilder<List<QueryDocumentSnapshot>>(
+                              stream: _getFriendRequestStream(user.email!, widget.userId),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                }
+                                if (snapshot.hasError) {
+                                  return Text('Error: ${snapshot.error}');
+                                }
+                                final List<QueryDocumentSnapshot> requestList = snapshot.data ?? [];
+                                final isRequestListEmpty = requestList.isEmpty;
+
+                                if (isRequestListEmpty) {
+                                  return ElevatedButton(
+                                    onPressed: () async {
+                                      try {
+                                        await FirebaseFirestore.instance.collection('Friend Requests').add({
+                                          'senderId': user.email,
+                                          'recipientId': widget.userId,
+                                          'accepted': false,
+                                        });
+                                      } catch (error) {
+                                        print('Error sending friend request: $error');
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      primary: Colors.green,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                    ),
+                                    child: Text(
+                                      'Add Friend',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  );
+                                } else {
+                                  return Container();
+                                }
+                              },
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),
                 ),
                 Divider(),
-                // Recent Activity: Posts
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
@@ -115,7 +322,7 @@ class UserProfilePage extends StatelessWidget {
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('User Posts')
-                      .where('UserEmail', isEqualTo: userId)
+                      .where('UserEmail', isEqualTo: widget.userId)
                       .orderBy('TimeStamp', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
@@ -138,17 +345,16 @@ class UserProfilePage extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final post = posts[index];
                         final postDate = (post['TimeStamp'] as Timestamp).toDate();
-                        //final formattedDate = formatDate(postDate); // Format date
                         return Column(
                           children: [
                             WallPost(
                               message: post['Message'],
                               user: post['UserEmail'],
-                              time: formatDate(post['TimeStamp']), // Display formatted date
+                              time: formatDate(post['TimeStamp']),
                               postId: post.id,
-                              likes: List<String>.from(post['Likes'] ?? []), // Replace with actual list of likes
+                              likes: List<String>.from(post['Likes'] ?? []),
                             ),
-                            Divider(), // Add divider between posts
+                            Divider(),
                           ],
                         );
                       },

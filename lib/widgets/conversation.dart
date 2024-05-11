@@ -48,6 +48,7 @@ class Conversation extends StatelessWidget {
           return ListTile(
             leading: CircleAvatar(
               // Use user profile picture
+              
             ),
             title: Text(
               recipientID,
