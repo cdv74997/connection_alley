@@ -1,7 +1,9 @@
 import 'package:connection_alley/helper/helper_methods.dart';
+import 'package:connection_alley/views/home_view.dart';
 import 'package:connection_alley/widgets/wall_post.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class SinglePost extends StatelessWidget {
   final String postId;
@@ -19,8 +21,8 @@ class SinglePost extends StatelessWidget {
           },
         ),
       ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('User Posts').doc(postId).get(),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('User Posts').doc(postId).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -33,23 +35,23 @@ class SinglePost extends StatelessWidget {
             );
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
+            Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => HomeView()),
+    );
             return Center(
-              child: Text('Post not found!'),
-            );
+    child: CircularProgressIndicator(),
+  );
+            
           }
 
           final postData = snapshot.data!;
-          final message = postData['Message'];
-          final user = postData['UserEmail'];
-          final time = formatDate(postData['TimeStamp']);
-          final likes = List<String>.from(postData['Likes']);
-
           return WallPost(
-            message: message,
-            user: user,
-            time: time,
             postId: postId,
-            likes: likes,
+            user: postData['UserEmail'],
+            time: formatDate(postData['TimeStamp']),
+            message: postData['Message'],
+            likes: List<String>.from(postData['Likes']),
           );
         },
       ),

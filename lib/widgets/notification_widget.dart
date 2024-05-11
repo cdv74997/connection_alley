@@ -1,8 +1,6 @@
-import 'package:connection_alley/helper/helper_methods.dart';
-import 'package:connection_alley/views/single_post.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connection_alley/widgets/wall_post.dart'; // Import WallPost view
+import 'package:connection_alley/views/single_post.dart';
 
 class NotificationWidget extends StatelessWidget {
   final String recipient;
@@ -24,23 +22,42 @@ class NotificationWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        // Fetch the post document
-        
+        try {
+          // Fetch the post document
+          DocumentSnapshot postSnapshot =
+              await FirebaseFirestore.instance.collection('User Posts').doc(postId).get();
 
-        // Update read field if it's initially false
-        //if (!read) {
-          //await FirebaseFirestore.instance.collection("Notifications").doc(postId).update({
-           // 'read': true,
-         // });
-       // }
-
-        // Navigate to WallPost view with postId passed in
-        Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => SinglePost(postId: postId),
-  ),
-);
+          // Check if the document exists
+          if (postSnapshot.exists) {
+            // Navigate to SinglePost view with postId passed in
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SinglePost(postId: postId),
+              ),
+            );
+          } else {
+            // Show dialog if post not found
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Post Not Found'),
+                content: Text('The referenced post was not found.'),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        } catch (error) {
+          // Handle any errors
+          print('Error fetching post: $error');
+        }
       },
       child: Container(
         padding: EdgeInsets.all(16),
