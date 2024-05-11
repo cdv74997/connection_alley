@@ -4,10 +4,19 @@ class Comment extends StatelessWidget {
   final String text;
   final String user;
   final String time;
-  const Comment({super.key, required this.text, required this.user, required this.time});
 
-  @override 
+  const Comment({
+    Key? key,
+    required this.text,
+    required this.user,
+    required this.time,
+  }) : super(key: key);
+
+  @override
   Widget build(BuildContext context) {
+    // Extracting username from the email
+    String username = user.split('@')[0];
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.secondary,
@@ -18,29 +27,30 @@ class Comment extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Text
-          Text(text),
-
-          const SizedBox(height: 5),
-          // user, time
+          // Username and time
           Row(
             children: [
               Text(
-                user,
-                style: TextStyle(color: Colors.grey[900]),
+                username,
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
               ),
-              Text(
-                " . ",
-                style: TextStyle(color: Colors.grey[900]),
-              ),
+              const Spacer(),
               Text(
                 time,
-                style: TextStyle(color: Colors.grey[900]),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
             ],
+          ),
+
+          const SizedBox(height: 5),
+          // Comment text
+          Text(
+            text,
+            style: TextStyle(color: Colors.black87, fontSize: 16), // Adjust font size here
           ),
         ],
       ),
     );
   }
 }
+

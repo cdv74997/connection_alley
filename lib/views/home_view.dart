@@ -316,7 +316,7 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
                 ? StreamBuilder(
                     stream: FirebaseFirestore.instance
                         .collection("User Posts")
-                        .orderBy("TimeStamp", descending: false)
+                        .orderBy("TimeStamp", descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState ==
@@ -336,6 +336,7 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
                           itemCount: filteredPosts.length,
                           itemBuilder: (context, index) {
                             final post = filteredPosts[index];
+                            
                             return WallPost(
                               message: post['Message'],
                               user: post['UserEmail'],
@@ -357,6 +358,7 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
                     stream: FirebaseFirestore.instance
                         .collection("Notifications")
                         .where('recipient', isEqualTo: user.email)
+                        .orderBy('time', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState ==

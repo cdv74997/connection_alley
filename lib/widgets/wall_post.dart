@@ -34,6 +34,14 @@ class _WallPostState extends State<WallPost> {
 
   final _commentTextController = TextEditingController();
 
+  String _truncateMessage(String message, int maxLength) {
+    if (message.length <= maxLength) {
+      return message;
+    } else {
+      return message.substring(0, maxLength) + '...';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,7 +63,7 @@ class _WallPostState extends State<WallPost> {
         // Create a notification for liking the post
         FirebaseFirestore.instance.collection('Notifications').add({
           'recipient': widget.user,
-          'message': '${currentUser.email} liked your post',
+          'message': '${currentUser.email} liked your post "${widget.message}"',
           'time': Timestamp.now(),
           'read': false, // New field: read, default to false
           'postId': widget.postId, // New field: postId
@@ -78,7 +86,7 @@ class _WallPostState extends State<WallPost> {
       // Create a notification for commenting on the post
       FirebaseFirestore.instance.collection('Notifications').add({
         'recipient': widget.user,
-        'message': '${currentUser.displayName} commented on your post',
+        'message': '${currentUser.email} commented on your post, "${_truncateMessage(widget.message, 20)}"',
         'time': Timestamp.now(),
         'read': false, // New field: read, default to false
         'postId': widget.postId, // New field: postId
@@ -125,46 +133,149 @@ class _WallPostState extends State<WallPost> {
     );
   }
 
+  // show a dialog for editing the post
+  void showEditDialog() {
+    _commentTextController.text = widget.message;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Edit Post"),
+        content: TextField(
+          controller: _commentTextController,
+          decoration: InputDecoration(hintText: "Edit your post.."),
+        ),
+        actions: [
+          // save button
+          TextButton(
+            onPressed: () {
+              // Update the post with the edited message
+              String editedMessage = _commentTextController.text;
+              FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).update({
+                "Message": editedMessage,
+              }).then((_) {
+                // Close the dialog
+                Navigator.pop(context);
+
+                // Clear controller
+                _commentTextController.clear();
+              }).catchError((error) {
+                // Handle the error
+                print("Error updating post: $error");
+              });
+            },
+            child: Text("Save"),
+          ),
+          // cancel button
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+
+              // clear controller
+              _commentTextController.clear();
+            },
+            child: Text("Cancel"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // show a confirmation dialog before deleting the post
+  void showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Delete Post"),
+        content: Text("Are you sure you want to delete this post?"),
+        actions: [
+          // Yes button
+          TextButton(
+            onPressed: () {
+              // Delete the post
+              FirebaseFirestore.instance.collection("User Posts").doc(widget.postId).delete().then((_) {
+                // Close the dialog
+                Navigator.pop(context);
+              }).catchError((error) {
+                // Handle the error
+                print("Error deleting post: $error");
+              });
+            },
+            child: Text("Yes"),
+          ),
+          // No button
+          TextButton(
+            onPressed: () {
+              // Close the dialog
+              Navigator.pop(context);
+            },
+            child: Text("No"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    String username = widget.user.split('@')[0];
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       margin: EdgeInsets.only(top: 25, left: 25, right: 25),
-      padding: EdgeInsets.all(25),
+      padding: (widget.user != currentUser.email) ? EdgeInsets.all(25): EdgeInsets.only(left: 25, right: 25),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Display the delete button if the current user is the author
+              if (widget.user == currentUser.email) Row( 
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                
+                children: [IconButton(
+                  onPressed: showDeleteConfirmationDialog,
+                  icon: Icon(Icons.close),
+                  color: Colors.red,
+                              ),
+                
+                ],
+              ),
           // user and time
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                widget.user,
-                style: TextStyle(color: Colors.grey[900], fontWeight: FontWeight.bold),
+                username,
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
               ),
               Text(
                 widget.time,
-                style: TextStyle(color: Colors.grey[900]),
+                style: TextStyle(color: Colors.grey[900], fontSize: 12),
               ),
+              
             ],
           ),
           SizedBox(height: 10),
           // message
           Text(
             widget.message,
-            style: TextStyle(color: Colors.black),
+            style: TextStyle(color: Colors.black, fontSize: 16),
           ),
           SizedBox(height: 20),
-          // like, comment, and share buttons
+          // like, comment, share, and delete buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               LikeButton(isLiked: isLiked, onTap: toggleLike),
               CommentButton(onTap: showCommentDialog),
               ShareButton(onTap: () {}),
+              // Display the edit button if the current user is the author
+              if (widget.user == currentUser.email) IconButton(
+                onPressed: showEditDialog,
+                icon: Icon(Icons.edit),
+              ),
+              
             ],
           ),
           SizedBox(height: 10),
@@ -203,4 +314,3 @@ class _WallPostState extends State<WallPost> {
     );
   }
 }
-

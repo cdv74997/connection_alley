@@ -1,24 +1,33 @@
-// return a formatted date as a string
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 String formatDate(Timestamp timestamp) {
   // Timestamp is the object we retrieve from firebase
-  // to display, lets convert to string
-
+  // to display, let's convert it to a DateTime object
   DateTime dateTime = timestamp.toDate();
 
-  // get year
+  // Convert hour from military time to regular time
+  int hour = dateTime.hour;
+  String period = 'AM';
+  if (hour >= 12) {
+    period = 'PM';
+    if (hour > 12) {
+      hour -= 12;
+    }
+  }
+  if (hour == 0) {
+    hour = 12;
+  }
+
+  // Format minute with leading zero if needed
+  String minute = dateTime.minute.toString().padLeft(2, '0');
+
+  // Get year, month, and day
   String year = dateTime.year.toString();
+  String month = dateTime.month.toString().padLeft(2, '0');
+  String day = dateTime.day.toString().padLeft(2, '0');
 
-  // get month
-  String month = dateTime.month.toString();
-
-  // get day
-  String day = dateTime.day.toString();
-
-  // final formatted date
-  String formattedDate = '$day/$month/$year';
+  // Construct the formatted date string
+  String formattedDate = '$hour:$minute $period   $month/$day/$year';
 
   return formattedDate;
 }
