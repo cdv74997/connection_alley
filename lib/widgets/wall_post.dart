@@ -224,7 +224,7 @@ class _WallPostState extends State<WallPost> {
         borderRadius: BorderRadius.circular(8),
       ),
       margin: EdgeInsets.only(top: 25, left: 25, right: 25),
-      padding: (widget.user != currentUser.email) ? EdgeInsets.all(25): EdgeInsets.only(left: 25, right: 25),
+      padding: (widget.user != currentUser.email) ? EdgeInsets.all(25): EdgeInsets.only(left: 25, right: 25, top: 25, bottom: 25),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
