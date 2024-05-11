@@ -284,6 +284,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         await FirebaseFirestore.instance.collection('Friend Requests').add({
                                           'senderId': user.email,
                                           'recipientId': widget.userId,
+                                          'time': Timestamp.now(),
                                           'accepted': false,
                                         });
                                       } catch (error) {

@@ -1,3 +1,4 @@
+import 'package:connection_alley/helper/helper_methods.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -53,7 +54,7 @@ class FriendRequestWidget extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            'Time: ${time.toDate()}',
+            formatDate(time),
             style: TextStyle(
               color: Colors.grey,
             ),

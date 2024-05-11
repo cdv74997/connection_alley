@@ -1,4 +1,5 @@
 import 'package:connection_alley/widgets/conversation.dart';
+import 'package:connection_alley/widgets/friend_request_widget.dart';
 import 'package:connection_alley/widgets/user.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -475,7 +476,41 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
     }
     return Center(child: CircularProgressIndicator());
   },
-) : Container(),
+) : showFriendRequests ? StreamBuilder<QuerySnapshot>(
+  stream: FirebaseFirestore.instance
+      .collection('Friend Requests')
+      .where('recipientId', isEqualTo: user.email) // Assuming currentUserID is the current user's ID
+      .snapshots(),
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Center(child: CircularProgressIndicator());
+    }
+    if (snapshot.hasData) {
+      final friendRequests = snapshot.data!.docs;
+      return ListView.builder(
+        itemCount: friendRequests.length,
+        itemBuilder: (context, index) {
+          final request = friendRequests[index].data() as Map<String, dynamic>;
+          
+          return FriendRequestWidget(
+            sender: request['senderId'],
+            recipient: request['recipientId'],
+            time: request['time'],
+            accepted: request['accepted'],
+          );
+        },
+      );
+    } else if (snapshot.hasError) {
+      return Center(
+        child: Text('Error: ${snapshot.error}'),
+      );
+    }
+    return Center(
+      child: CircularProgressIndicator(),
+    );
+  },
+)
+: Container(),
 
           ),
 Column(
