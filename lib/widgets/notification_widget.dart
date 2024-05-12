@@ -24,43 +24,48 @@ class NotificationWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        try {
-          // Fetch the post document
-          DocumentSnapshot postSnapshot =
-              await FirebaseFirestore.instance.collection('User Posts').doc(postId).get();
+  try {
+    // Update the notification to mark it as read
+    await FirebaseFirestore.instance.collection('Notifications').doc(id).update({
+      'read': true,
+    });
 
-          // Check if the document exists
-          if (postSnapshot.exists) {
-            // Navigate to SinglePost view with postId passed in
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SinglePost(postId: postId),
-              ),
-            );
-          } else {
-            // Show dialog if post not found
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Post Not Found'),
-                content: Text('The referenced post was not found.'),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          }
-        } catch (error) {
-          // Handle any errors
-          print('Error fetching post: $error');
-        }
-      },
+    // Fetch the post document
+    DocumentSnapshot postSnapshot =
+        await FirebaseFirestore.instance.collection('User Posts').doc(postId).get();
+
+    // Check if the document exists
+    if (postSnapshot.exists) {
+      // Navigate to SinglePost view with postId passed in
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SinglePost(postId: postId),
+        ),
+      );
+    } else {
+      // Show dialog if post not found
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Post Not Found'),
+          content: Text('The referenced post was not found.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  } catch (error) {
+    // Handle any errors
+    print('Error fetching post: $error');
+  }
+},
       child: Container(
         padding: EdgeInsets.all(16),
         margin: EdgeInsets.symmetric(vertical: 8),
