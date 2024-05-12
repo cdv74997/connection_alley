@@ -546,6 +546,35 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
         return SizedBox.shrink();
       },
     ),
+    // Default message if no friend requests
+    StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Friend Requests')
+          .where('recipientId', isEqualTo: user.email)
+          .where('accepted', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasData) {
+          final friendRequests = snapshot.data!.docs;
+          if (friendRequests.isEmpty) {
+            return Center(
+              child: Text('You have no pending friend requests'),
+            );
+          }
+          return SizedBox.shrink();
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    ),
   ],
 )
 
