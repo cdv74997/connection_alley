@@ -1,3 +1,4 @@
+import 'package:connection_alley/widgets/FriendConfirmationWidget.dart';
 import 'package:connection_alley/widgets/conversation.dart';
 import 'package:connection_alley/widgets/friend_request_widget.dart';
 import 'package:connection_alley/widgets/user.dart';
@@ -476,41 +477,80 @@ Future<List<QueryDocumentSnapshot>> _getMessages(String userEmail) async {
     }
     return Center(child: CircularProgressIndicator());
   },
-) : showFriendRequests ? StreamBuilder<QuerySnapshot>(
-  stream: FirebaseFirestore.instance
-      .collection('Friend Requests')
-      .where('recipientId', isEqualTo: user.email) // Assuming currentUserID is the current user's ID
-      .snapshots(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return Center(child: CircularProgressIndicator());
-    }
-    if (snapshot.hasData) {
-      final friendRequests = snapshot.data!.docs;
-      return ListView.builder(
-        itemCount: friendRequests.length,
-        itemBuilder: (context, index) {
-          final request = friendRequests[index].data() as Map<String, dynamic>;
-          
-          return FriendRequestWidget(
-            sender: request['senderId'],
-            recipient: request['recipientId'],
-            time: request['time'],
-            accepted: request['accepted'],
+) : showFriendRequests ? Stack(
+  children: [
+    // StreamBuilder for Friend Requests
+    StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Friend Requests')
+          .where('recipientId', isEqualTo: user.email) // Assuming currentUserID is the current user's ID
+          .where('accepted', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasData) {
+          final friendRequests = snapshot.data!.docs;
+          return ListView.builder(
+            itemCount: friendRequests.length,
+            itemBuilder: (context, index) {
+              final request = friendRequests[index].data() as Map<String, dynamic>;
+              return FriendRequestWidget(
+                id: friendRequests[index].id,
+                sender: request['senderId'],
+                recipient: request['recipientId'],
+                time: request['time'],
+                accepted: request['accepted'],
+              );
+            },
           );
-        },
-      );
-    } else if (snapshot.hasError) {
-      return Center(
-        child: Text('Error: ${snapshot.error}'),
-      );
-    }
-    return Center(
-      child: CircularProgressIndicator(),
-    );
-  },
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    ),
+    // StreamBuilder for New Friends
+    StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('New Friends')
+          .where('recipient', isEqualTo: user.email) // Assuming currentUserID is the current user's ID
+          .orderBy('timestamp', descending: true) // Order by timestamp to get the latest first
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox.shrink(); // Hide if waiting
+        }
+        if (snapshot.hasData) {
+          final newFriends = snapshot.data!.docs;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: newFriends.map((newFriend) {
+              final data = newFriend.data() as Map<String, dynamic>;
+              return FriendConfirmationWidget(
+                sender: data['sender'],
+                recipient: data['recipient'],
+              );
+            }).toList(),
+          );
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+        return SizedBox.shrink();
+      },
+    ),
+  ],
 )
-: Container(),
+
+:
+ Container(),
 
           ),
 Column(
